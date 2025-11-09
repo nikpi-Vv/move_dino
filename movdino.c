@@ -1,50 +1,53 @@
-
-
+// movdino.c — минимальный main
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include "options.h"
+#include "engine.h"
+#include "game.h" 
 
-#define MAX_LINE 256/*самая длинная команда в MovDino — это, например:
-IF CELL 99 99 IS a THEN PAINT b → ~30 символов,
-даже с запасом на координаты и имена файлов — 256 байт более чем достаточно.*/
-#define MIN_SIZE 10  //Минимальный размер поля  1010 клеток.
-#define MAX_SIZE 100 //Максимальный размер поля  100100 клеток
+int main(int argc, char *argv[]) {
+    printf("=== MOVDINO PROGRAM ===\n");
+    
+    // Инициализируем игру
+    struct GameState game;
+    game.width = 0;
+    game.height = 0;
+    game.dino_x = -1;
+    game.dino_y = -1;
 
-//На этом этапе реализуйте только Часть 1 
-//(SIZE, START, MOVE + тороидальная логика). 
-//чтение команд,
+    // Проверяем аргументы
+    if (argc < 3) {
+        printf("Usage: %s input.txt output.txt [options]\n", argv[0]);
+        printf("Options:\n");
+        printf("  interval N    - delay between updates in seconds\n");
+        printf("  no-display    - disable field visualization\n");
+        printf("  no-save       - disable saving to output file\n");
+        return 1;
+    }
 
-//хранение поля (char **grid),
+    // Разбираем опции
+    struct ProgramOptions options;
+    parseOptions(argc, argv, &options);
 
-//позиция динозавра,
+    // Проверка минимального интервала
+    if (options.interval < 0.1) {
+        options.interval = 0.1;
+    }
 
-//обработка SIZE, START, MOVE,
+    printf("Input file: %s\n", argv[1]);
+    printf("Output file: %s\n", argv[2]);
+    printf("Display: %s\n", options.display_enabled ? "enabled" : "disabled");
+    printf("Save: %s\n", options.save_enabled ? "enabled" : "disabled");
+    printf("Interval: %.1f seconds\n", options.interval);
 
-//вывод поля.
+    // Запускаем движок (engine) — обработчик файла/команд
+    int result = run_engine(argv[1], argv[2], &options, &game);
 
+    if (result == 0) {
+        printf("\nSUCCESS: All commands executed!\n");
+    } else {
+        printf("\nERROR: Program finished with error (code %d)\n", result);
+    }
 
-
-//Добавьте команды из Части 2 (PAINT, DIG, MOUND)
-//Пока всё ещё в одном файле — просто добавьте if/else 
-//или switch для новых команд.
-
-//Этап 3: Как только код превысит ~300 строк — начинайте разделять
-/*main.c — только main() и обработка аргументов,
-field.c — работа с полем,
-commands.c — выполнение команд.
-Остальное (UNDO, EXEC, IF и т.д.) — добавляйте по мере необходимости.*/
-
-/*movdino/
-├── movdino.c      // основной файл: всё, кроме main
-├── main.c         // только main() и аргументы
-└── Makefile*/
-
-/*void init_field(int w, int h);
-void set_dino(int x, int y);
-void move_dino(char *dir);
-void paint_cell(char color);
-void print_field(void);
-int execute_command(char *line);
-// ...*/
-
+    return (result == 0) ? 0 : 1;
+}
